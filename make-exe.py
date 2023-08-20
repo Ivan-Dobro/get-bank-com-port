@@ -1,16 +1,11 @@
 import PyInstaller.__main__
-
+'''
+Creating .exe file for deployment to Windwos7
+'''
 PyInstaller.__main__.run(
     [
-        'get_bank_com_port.py',
-        '--name=Get_Bank_COM_Port',
+        'get-bank-com-port.py',
+        '--name=Get-Bank-COM-Port',
         '--onefile'
-        # '--noconsole',
-        # '--add-data=config-kassa.json;.',
-        # '--add-data=img\kassabot.ico;img',
-        # '--uac-admin',
-        # '--icon=img\kassabot.ico'
-
-
     ]
 )
