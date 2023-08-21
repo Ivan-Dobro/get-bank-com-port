@@ -2,12 +2,20 @@ from argparse import ArgumentParser, Namespace
 import logging
 import logging.handlers
 from pathlib import Path
-import wmi 
-import re
+import wmi,re,sys
 
 
+# Default config
+cfg = {
+    'filename':'com-port.txt',
+    'devicename':'USB Serial',
+    'log-file':'get-bank-com-port.log',
+    'CAPTION_DUMMY':'USB Serial Port (COM66)' # for dev enviroment
+}
 
-class Bank_COM_Port():
+
+class Bank_COM_Port(): 
+    ''' Main Class '''
     def __init__(self) -> None:
         self.filename : str
         self.devicename: str
@@ -19,16 +27,25 @@ class Bank_COM_Port():
 
 
     def get_cwd(self):
+        ''' get program run path according to execution environment'''
+        if getattr (sys,'frozen',False) and hasattr(sys,'_MEIPASS'):
+            print('running in a PyInstaller bundle') # dev - remove
+            return str(Path(sys.executable).parent.absolute()) + '\\'
+        else:
+            print('running in a normal Python process') # dev - remove
+            return str(Path( __file__ ).parent.absolute()) + '\\'
+
+
         return str(Path( __file__ ).parent.absolute())+'\\'
 
     def init_logging(self):
-
+        ''' logging to file and stduot'''
         self.log = logging.getLogger(__name__)
         self.log.setLevel(logging.DEBUG)
         log_formater = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s',
                                               datefmt='%d-%m-%Y %H:%M:%S')
         
-        log_file_handler=logging.handlers.TimedRotatingFileHandler(f'{self.get_cwd()}get-bank-com-port.log',
+        log_file_handler=logging.handlers.TimedRotatingFileHandler(f'{self.get_cwd()+ cfg["log-file"]}',
                                                          encoding='utf-8',
                                                          when='D',
                                                          interval=30,
@@ -51,6 +68,7 @@ class Bank_COM_Port():
 
 
     def cmd_parametrs(self):
+        ''' commad line parametrs'''
         cmd_parser = ArgumentParser(
             prog='Get_Bank_COM_Port.exe',
             description='Getting USB-COM port of connected payment terminal in Windows Device Manager v. 1.0 (c)2023 by iD',
@@ -58,12 +76,12 @@ class Bank_COM_Port():
             epilog='')
 
         cmd_parser.add_argument('-f','--file',
-                                help='\"Filename\" to store COM number. Default - com-port.txt',
-                                default=self.get_cwd()+'com-port.txt',
+                                help=f'\"Filename\" to store COM number. Default - {cfg["filename"]}',
+                                default=self.get_cwd()+cfg["filename"],
                                 type=str)
         cmd_parser.add_argument('-d','--device',
-                                help='Device name to start with. Default - \"USB Serial \"',
-                                default='USB Serial',
+                                help=f'Device name to start with. Default - \" {cfg["devicename"]} \"',
+                                default=cfg['devicename'],
                                 type=str)
         cmd_parser.add_argument('-t','--terminal',help='Output to terminal',action='store_true')
 
@@ -79,6 +97,7 @@ class Bank_COM_Port():
 
 
     def get_com_port(self):
+        ''' find device name in Device Manager and retrieve COM port number'''
         w = wmi.WMI()
 
         wql = f"SELECT * FROM Win32_PnPEntity WHERE Caption LIKE \'{self.devicename}\'"
@@ -91,14 +110,14 @@ class Bank_COM_Port():
             self.log.error(f'WMI Error query ( {wql} ) with {er}')
             devs = []
 
-        device_caption = CAPTION_DUMMY # for dev enviroment
+        device_caption = cfg['CAPTION_DUMMY'] # for dev enviroment
 
         self.log.debug(f'{devs=}')
 
         if len(devs) == 1 : 
             device_caption = devs[0].__getattr__('Caption') 
         elif len(devs) == 0:
-            self.log.warning('No device found , using COM-0 port ')
+            self.log.warning('No device found , using COM port [0]')
         elif len(devs) > 1:
             self.log.warning(f'Found {len(devs)} devices, geting first one ')
             device_caption = devs[0].__getattr__('Caption') 
@@ -107,7 +126,7 @@ class Bank_COM_Port():
         self.log.info(f'Device Name Caption - {device_caption}')    
      
 
-        match = re.search("(?<=\(COM)\d+(?=\))",device_caption)
+        match = re.search("(?<=\(COM)\d+(?=\))",device_caption) # get digit after (COM  and)
         if match:
             self.log.info(f'Port nuber is - {match[0]}')
             com_number = match[0]
@@ -122,12 +141,10 @@ class Bank_COM_Port():
                 self.log.error(f'Writing to file {self.filename} error {er}')
 
 
-
-
-
 if __name__ == "__main__":
-    CAPTION_DUMMY = 'USB Serial Port (COM66)' # for dev enviroment
     
+    print(cfg['filename'])
+
     app = Bank_COM_Port()
     app.get_com_port()
 
