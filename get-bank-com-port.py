@@ -1,3 +1,9 @@
+'''
+Get-Bank-COM-Port 
+v. 1.0
+21.08.23
+'''
+
 from argparse import ArgumentParser, Namespace
 import logging
 import logging.handlers
@@ -10,7 +16,7 @@ cfg = {
     'filename':'com-port.txt',
     'devicename':'USB Serial',
     'log-file':'get-bank-com-port.log',
-    'CAPTION_DUMMY':'USB Serial Port (COM66)' # for dev enviroment
+    'CAPTION_DUMMY':'USB Serial Port (COM0)' # for dev enviroment
 }
 
 
@@ -29,10 +35,8 @@ class Bank_COM_Port():
     def get_cwd(self):
         ''' get program run path according to execution environment'''
         if getattr (sys,'frozen',False) and hasattr(sys,'_MEIPASS'):
-            print('running in a PyInstaller bundle') # dev - remove
             return str(Path(sys.executable).parent.absolute()) + '\\'
         else:
-            print('running in a normal Python process') # dev - remove
             return str(Path( __file__ ).parent.absolute()) + '\\'
 
 
@@ -117,7 +121,7 @@ class Bank_COM_Port():
         if len(devs) == 1 : 
             device_caption = devs[0].__getattr__('Caption') 
         elif len(devs) == 0:
-            self.log.warning('No device found , using COM port [0]')
+            self.log.warning('No device found , using Dummy COM port 0')
         elif len(devs) > 1:
             self.log.warning(f'Found {len(devs)} devices, geting first one ')
             device_caption = devs[0].__getattr__('Caption') 
